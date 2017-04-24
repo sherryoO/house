@@ -1,0 +1,60 @@
+<krpano>
+<!--  VR模式 保留  -->
+<plugin name="WebVR" keep="true" devices="html5" multireslock.desktop="true" multireslock.mobile.or.tablet="false" mobilevr_fake_support="true" onavailable="removelayer(webvr_enterbutton); skin_arrange_buttons(); webvr_onavailable();" onentervr="skin_showloading(false); webvr_onentervr(); webvr_setup();" onexitvr="webvr_onexitvr(); webvr_setup();"/>
+<action name="enterVR">
+for(set(i,0),i LT hotspot.count,inc(i), set(hot_name,get(hotspot[get(i)].name)); if(hotspot[get(hot_name)].linkedscene, set(hotspot[get(hot_name)].distorted,true); ); if(hotspot[get(hot_name)].webvr, set(hotspot[get(hot_name)].visible,false); ); ); set(Inter,hide); Interface();
+</action>
+<action name="exitVR">
+for(set(i,0),i LT hotspot.count,inc(i), set(hot_name,get(hotspot[get(i)].name)); if(hotspot[get(hot_name)].linkedscene, set(hotspot[get(hot_name)].distorted,false); ); if(hotspot[get(hot_name)].webvr, set(hotspot[get(hot_name)].visible,true); ); ); set(Inter,show); Interface();
+</action>
+<!--  场景加载完成后执行属性    -->
+<action name="WebVR_onremovepano">
+if(webvr.isenabled, WebVR_visible(true); , WebVR_visible(false); );
+</action>
+<!--  自动vr模式热点样式  -->
+<action name="WebVR_visible">
+for(set(i,0),i LT hotspot.count,inc(i), if(%1 == true, if(hotspot[get(i)].linkedscene, set(hotspot[get(i)].distorted,true); ); if(hotspot[get(i)].webvr, set(hotspot[get(i)].visible,false); ); set(Inter,hide); Interface(); , if(hotspot[get(i)].linkedscene, set(hotspot[get(i)].distorted,false); ); if(hotspot[get(i)].webvr, set(hotspot[get(i)].visible,true); ); set(Inter,show); Interface(); ); );
+</action>
+<action name="Interface" type="Javascript" devices="html5">
+<![CDATA[
+var hss1 = krpano.get("Inter");if(hss1 == "hide"){$(".am-navbar,.zimu,#box").hide();}else{$(".am-navbar,.zimu,#box").show();}
+]]>
+</action>
+<!--
+ 热点动画action，每隔0.03秒改变crop的内容，从而实现动画效果，inc是一个每次递增指定数值的方法，这里是让frame这个变量每次增加1，当到达19时，则从0又开始递增。mul是乘法运算，将高度乘以当前帧序号，得到crop中y的位置。txtadd对crop的内容进行了设定。因为每一次ypos的值都会发生变化，所以crop中所显示的内容也发生变化。最后是0.03秒后再次执行自身。 
+-->
+<action name="hotspot_animate">
+inc(frame,1,get(lastframe),0); mul(ypos,frame,frameheight); txtadd(crop,'0|',get(ypos),'|',get(framewidth),'|',get(frameheight)); delayedcall(0.03, if(loaded, hotspot_animate() ) );
+</action>
+<style name="hotspotname" scale="1" url="%SWFPATH%/plugins/textfield.swf" padding="5" backgroundcolor="#000000" backgroundalpha="0.5" roundedge="5" css="font-family:黑体; font-size:14px; color:#ffffff;letter-spacing:1px;" edge="top" oy="-40"/>
+<style name="hotspotname" devices="mobile" css="font-family:黑体; font-size:12px; color:#ffffff;letter-spacing:1px;" oy="-40"/>
+<!--  场景切换类用  -->
+<action name="showtxt_action">
+if(view.vlookat LT -80 OR view.vlookat GT +80, delayedcall(1.5, if(lp_scene === xml.scene, tween(view.hlookat|view.vlookat|view.fov|view.distortion, calc('' + lp_hlookat + '|' + lp_vlookat + '|' + lp_fov + '|' + 0.0), 2.0, easeOutQuad, set(control.usercontrol, all); tween(view.fovmax, get(lp_fovmax)); ); showtxt_name(get(name),get(scene[get(linkedscene)].title),get(ath),get(atv)); ); ); , showtxt_name(get(name),get(scene[get(linkedscene)].title),get(ath),get(atv)); );
+</action>
+<!--  热点类用   需要额外加titile  -->
+<action name="showtxt_action_Spot">
+if(view.vlookat LT -80 OR view.vlookat GT +80, delayedcall(1.5, if(lp_scene === xml.scene, tween(view.hlookat|view.vlookat|view.fov|view.distortion, calc('' + lp_hlookat + '|' + lp_vlookat + '|' + lp_fov + '|' + 0.0), 2.0, easeOutQuad, set(control.usercontrol, all); tween(view.fovmax, get(lp_fovmax)); ); showtxt_name(get(name),get(title),get(ath),get(atv)); ); ); , showtxt_name(get(name),get(title),get(ath),get(atv)); );
+</action>
+<action name="showtxt_name">
+txtadd(hotname,'hotsoptname_',%1); addhotspot(get(hotname)); set(hotspot[get(hotname)].html,%2); set(hotspot[get(hotname)].ath,%3); set(hotspot[get(hotname)].atv,%4); set(hotspot[get(hotname)].onclick,get(onclick)); hotspot[get(hotname)].loadstyle(hotspotname);
+</action>
+<action name="gotoscene_1">
+if(linkedscene, tween(scale,0.25,0.5); tween(oy,-20,0.5); tween(alpha,0,0.5); looktohotspot(); loadscene(get(linkedscene),null,MERGE,BLEND(1)); skin_updatescroll(); );
+</action>
+<!--
+ 定义热点风格 - 黑色热点的style 因为需要用到crop来进行动画，所以列出了png图片宽度、高度、第一帧开始位置也就是0，以及最后一帧也就是19，onloaded也就是载入后执行一个动画的action
+-->
+<style name="hotspot_ani_Ahead" url="%SWFPATH%/hotspot_style/new_spotd1_128_3200.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_TurnLeft" url="%SWFPATH%/hotspot_style/new_TurnLeft_128_3200.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_TurnRight" url="%SWFPATH%/hotspot_style/new_TurnRight_128_3200.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Here" url="%SWFPATH%/hotspot_style/new_spotd12_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style1" url="%SWFPATH%/hotspot_style/new_spotd4_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style2" url="%SWFPATH%/hotspot_style/new_spotd5_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style3" url="%SWFPATH%/hotspot_style/new_spotd6_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style4" url="%SWFPATH%/hotspot_style/new_spotd7_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style5" url="%SWFPATH%/hotspot_style/new_spotd8_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style6" url="%SWFPATH%/hotspot_style/new_spotd9_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style7" url="%SWFPATH%/hotspot_style/new_spotd10_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+<style name="hotspot_ani_Style8" url="%SWFPATH%/hotspot_style/new_spotd11_gif.png" crop="0|0|128|128" framewidth="128" frameheight="128" frame="0" lastframe="24" scale="0.6" scale.mobile="0.40" onover="tween(scale,0.7);" onout="tween(scale,0.6);" onloaded="showtxt_action();hotspot_animate();" onclick="gotoscene_1();"/>
+</krpano>
